@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   UploadCloud,
   CheckCircle2,
@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 
 export default function DocumentPortalPage({ onShowToast, onProceedToApplication }) {
+  const fileInputRef = useRef(null);
+  const [activeDocKey, setActiveDocKey] = useState('general');
+
   const [activeUploads, setActiveUploads] = useState([
     { id: 'upload-1', fileName: 'bank_statement_q3.pdf', progress: 45 }
   ]);
@@ -28,15 +31,46 @@ export default function DocumentPortalPage({ onShowToast, onProceedToApplication
     employment: { status: 'error', fileName: 'emp_letter.pdf', error: 'File "emp_letter.pdf" is password protected. Please upload an unprotected version.' }
   });
 
-  const handleUploadFile = (docKey) => {
-    if (onShowToast) onShowToast(`Selecting file for ${docKey}... Upload started!`, 'info');
+  const triggerFileUpload = (docKey = 'general') => {
+    setActiveDocKey(docKey);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const formattedSize = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+    const fileName = file.name;
+
+    if (onShowToast) onShowToast(`Uploading "${fileName}" (${formattedSize})...`, 'info');
+
+    // Add to active uploads stream
+    const uploadId = 'upload-' + Date.now();
+    setActiveUploads((prev) => [
+      { id: uploadId, fileName, progress: 30 },
+      ...prev
+    ]);
+
     setTimeout(() => {
-      setDocumentsState((prev) => ({
-        ...prev,
-        [docKey]: { status: 'in-review', fileName: `${docKey}_document_2024.pdf`, size: '1.8 MB' }
-      }));
-      if (onShowToast) onShowToast(`Uploaded document for ${docKey} successfully!`, 'success');
-    }, 1200);
+      setActiveUploads((prev) =>
+        prev.map((u) => (u.id === uploadId ? { ...u, progress: 100 } : u))
+      );
+
+      setTimeout(() => {
+        setActiveUploads((prev) => prev.filter((u) => u.id !== uploadId));
+        setDocumentsState((prev) => ({
+          ...prev,
+          [activeDocKey]: { status: 'in-review', fileName, size: formattedSize }
+        }));
+        if (onShowToast) onShowToast(`Document "${fileName}" successfully uploaded!`, 'success');
+      }, 500);
+    }, 1000);
+
+    // Reset input
+    e.target.value = '';
   };
 
   const handleViewDoc = (fileName) => {
@@ -45,6 +79,15 @@ export default function DocumentPortalPage({ onShowToast, onProceedToApplication
 
   return (
     <div className="page-view document-portal-page animate-fade-in">
+      {/* Hidden Native File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+      />
+
       <div className="container doc-portal-container">
         {/* Page Header */}
         <div className="doc-portal-header">
@@ -74,7 +117,7 @@ export default function DocumentPortalPage({ onShowToast, onProceedToApplication
             </div>
 
             {/* 2. Drag & Drop Upload Zone Card */}
-            <div className="doc-portal-card drag-drop-card" onClick={() => handleUploadFile('funds')}>
+            <div className="doc-portal-card drag-drop-card" onClick={() => triggerFileUpload('funds')}>
               <div className="drag-drop-inner">
                 <div className="upload-cloud-icon-circle">
                   <UploadCloud size={28} className="cloud-icon" />
@@ -164,13 +207,15 @@ export default function DocumentPortalPage({ onShowToast, onProceedToApplication
                   <div className="doc-item-center-info">
                     <div className="doc-title-row">
                       <h4 className="doc-item-title">Digital Photograph</h4>
-                      <span className="status-badge-pill pill-in-review">In Review</span>
+                      <span className="status-badge-pill pill-in-review">
+                        {documentsState.photo?.status === 'in-review' ? 'In Review' : 'Verified'}
+                      </span>
                     </div>
                     <p className="doc-item-instructions">2x2 inches, white background, taken within last 6 months.</p>
-                    <p className="doc-file-meta">🖼 visa_photo_2024.jpg • 1.1 MB</p>
+                    <p className="doc-file-meta">🖼 {documentsState.photo?.fileName || 'visa_photo_2024.jpg'} • {documentsState.photo?.size || '1.1 MB'}</p>
                   </div>
                   <div className="doc-item-right-action">
-                    <button className="btn-doc-action-link" onClick={() => handleUploadFile('photo')}>
+                    <button className="btn-doc-action-link" onClick={() => triggerFileUpload('photo')}>
                       <RefreshCw size={14} />
                       <span>Replace</span>
                     </button>
@@ -178,71 +223,87 @@ export default function DocumentPortalPage({ onShowToast, onProceedToApplication
                 </div>
 
                 {/* 3. Proof of Funds */}
-                <div className="doc-checklist-item missing-item">
+                <div className={`doc-checklist-item ${documentsState.funds?.status === 'in-review' ? 'in-review-item' : 'missing-item'}`}>
                   <div className="doc-item-left-status">
-                    <div className="status-icon-circle missing">
-                      <AlertCircle size={16} />
+                    <div className={`status-icon-circle ${documentsState.funds?.status === 'in-review' ? 'in-review' : 'missing'}`}>
+                      {documentsState.funds?.status === 'in-review' ? <Clock size={16} /> : <AlertCircle size={16} />}
                     </div>
                   </div>
                   <div className="doc-item-center-info">
                     <div className="doc-title-row">
                       <h4 className="doc-item-title">Proof of Funds</h4>
-                      <span className="status-badge-pill pill-missing">Missing</span>
+                      <span className={`status-badge-pill ${documentsState.funds?.status === 'in-review' ? 'pill-in-review' : 'pill-missing'}`}>
+                        {documentsState.funds?.status === 'in-review' ? 'In Review' : 'Missing'}
+                      </span>
                     </div>
                     <p className="doc-item-instructions">Bank statements for the last 3 months showing consistent balance.</p>
+                    {documentsState.funds?.fileName && (
+                      <p className="doc-file-meta">📄 {documentsState.funds.fileName} • {documentsState.funds.size}</p>
+                    )}
                   </div>
                   <div className="doc-item-right-action">
-                    <button className="btn-doc-action-pill" onClick={() => handleUploadFile('funds')}>
+                    <button className="btn-doc-action-pill" onClick={() => triggerFileUpload('funds')}>
                       <Upload size={13} />
-                      <span>Upload</span>
+                      <span>{documentsState.funds?.fileName ? 'Re-upload' : 'Upload'}</span>
                     </button>
                   </div>
                 </div>
 
                 {/* 4. Travel Itinerary */}
-                <div className="doc-checklist-item missing-item">
+                <div className={`doc-checklist-item ${documentsState.itinerary?.status === 'in-review' ? 'in-review-item' : 'missing-item'}`}>
                   <div className="doc-item-left-status">
-                    <div className="status-icon-circle missing">
-                      <AlertCircle size={16} />
+                    <div className={`status-icon-circle ${documentsState.itinerary?.status === 'in-review' ? 'in-review' : 'missing'}`}>
+                      {documentsState.itinerary?.status === 'in-review' ? <Clock size={16} /> : <AlertCircle size={16} />}
                     </div>
                   </div>
                   <div className="doc-item-center-info">
                     <div className="doc-title-row">
                       <h4 className="doc-item-title">Travel Itinerary</h4>
-                      <span className="status-badge-pill pill-missing">Missing</span>
+                      <span className={`status-badge-pill ${documentsState.itinerary?.status === 'in-review' ? 'pill-in-review' : 'pill-missing'}`}>
+                        {documentsState.itinerary?.status === 'in-review' ? 'In Review' : 'Missing'}
+                      </span>
                     </div>
                     <p className="doc-item-instructions">Flight reservations or planned travel dates and accommodation details.</p>
+                    {documentsState.itinerary?.fileName && (
+                      <p className="doc-file-meta">📄 {documentsState.itinerary.fileName} • {documentsState.itinerary.size}</p>
+                    )}
                   </div>
                   <div className="doc-item-right-action">
-                    <button className="btn-doc-action-pill" onClick={() => handleUploadFile('itinerary')}>
+                    <button className="btn-doc-action-pill" onClick={() => triggerFileUpload('itinerary')}>
                       <Upload size={13} />
-                      <span>Upload</span>
+                      <span>{documentsState.itinerary?.fileName ? 'Re-upload' : 'Upload'}</span>
                     </button>
                   </div>
                 </div>
 
                 {/* 5. Employment Letter (with error alert) */}
-                <div className="doc-checklist-item error-item">
+                <div className={`doc-checklist-item ${documentsState.employment?.status === 'in-review' ? 'in-review-item' : 'error-item'}`}>
                   <div className="doc-item-left-status">
-                    <div className="status-icon-circle error">
-                      <AlertTriangle size={16} />
+                    <div className={`status-icon-circle ${documentsState.employment?.status === 'in-review' ? 'in-review' : 'error'}`}>
+                      {documentsState.employment?.status === 'in-review' ? <Clock size={16} /> : <AlertTriangle size={16} />}
                     </div>
                   </div>
                   <div className="doc-item-center-info">
                     <div className="doc-title-row">
                       <h4 className="doc-item-title">Employment Letter</h4>
-                      <span className="status-badge-pill pill-error">Missing</span>
+                      <span className={`status-badge-pill ${documentsState.employment?.status === 'in-review' ? 'pill-in-review' : 'pill-error'}`}>
+                        {documentsState.employment?.status === 'in-review' ? 'In Review' : 'Action Required'}
+                      </span>
                     </div>
                     <p className="doc-item-instructions">Letter from employer confirming status and leave approval.</p>
                     
-                    {/* Error Banner matching Image 2 */}
-                    <div className="doc-error-alert-banner">
-                      <AlertCircle size={14} className="alert-svg" />
-                      <span>File "emp_letter.pdf" is password protected. Please upload an unprotected version.</span>
-                    </div>
+                    {documentsState.employment?.status !== 'in-review' && (
+                      <div className="doc-error-alert-banner">
+                        <AlertCircle size={14} className="alert-svg" />
+                        <span>File "emp_letter.pdf" is password protected. Please upload an unprotected version.</span>
+                      </div>
+                    )}
+                    {documentsState.employment?.status === 'in-review' && (
+                      <p className="doc-file-meta">📄 {documentsState.employment.fileName} • {documentsState.employment.size}</p>
+                    )}
                   </div>
                   <div className="doc-item-right-action">
-                    <button className="btn-doc-action-pill" onClick={() => handleUploadFile('employment')}>
+                    <button className="btn-doc-action-pill" onClick={() => triggerFileUpload('employment')}>
                       <Upload size={13} />
                       <span>Upload</span>
                     </button>
@@ -262,7 +323,7 @@ export default function DocumentPortalPage({ onShowToast, onProceedToApplication
                     <h4 className="optional-item-title">+ Previous Visas</h4>
                     <p className="optional-item-desc">Scans of previous visas to US, UK, Schengen area, etc.</p>
                   </div>
-                  <button className="btn-add-optional-doc" onClick={() => handleUploadFile('previous-visas')}>
+                  <button className="btn-add-optional-doc" onClick={() => triggerFileUpload('previous-visas')}>
                     <Plus size={13} />
                     <span>Add Document</span>
                   </button>
@@ -273,7 +334,7 @@ export default function DocumentPortalPage({ onShowToast, onProceedToApplication
                     <h4 className="optional-item-title">+ Property Ownership</h4>
                     <p className="optional-item-desc">Deeds or documents proving strong ties to home country.</p>
                   </div>
-                  <button className="btn-add-optional-doc" onClick={() => handleUploadFile('property-ownership')}>
+                  <button className="btn-add-optional-doc" onClick={() => triggerFileUpload('property-ownership')}>
                     <Plus size={13} />
                     <span>Add Document</span>
                   </button>

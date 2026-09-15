@@ -60,53 +60,21 @@ export default function Navbar({
 
         {/* Desktop Navigation Links */}
         <nav className="desktop-nav-links">
-          {/* 1. Visas Dropdown Trigger */}
-          <div
-            className="nav-item-dropdown-wrap"
-            onMouseLeave={() => setActiveDropdown(null)}
+          {/* 1. Visas Nav Button */}
+          <button
+            className={`nav-link ${activePage === 'visas' ? 'active' : ''}`}
+            onClick={() => handleNavClick('visas')}
           >
-            <button
-              className={`nav-link dropdown-toggle ${activePage === 'visas' ? 'active' : ''}`}
-              onClick={() => handleNavClick('visas')}
-              onMouseEnter={() => setActiveDropdown('visas')}
-              aria-expanded={activeDropdown === 'visas'}
-            >
-              <span>Visas</span>
-              <ChevronDown size={14} className={`chevron-icon ${activeDropdown === 'visas' ? 'rotate' : ''}`} />
-            </button>
-            {activeDropdown === 'visas' && (
-              <DropdownMenu
-                type="visas"
-                items={visaDropdownItems}
-                onSelect={handleDropdownSelect}
-                onClose={() => setActiveDropdown(null)}
-              />
-            )}
-          </div>
+            Visas
+          </button>
 
-          {/* 2. Destinations Dropdown Trigger */}
-          <div
-            className="nav-item-dropdown-wrap"
-            onMouseLeave={() => setActiveDropdown(null)}
+          {/* 2. Destinations Nav Button */}
+          <button
+            className={`nav-link ${activePage === 'destinations' ? 'active' : ''}`}
+            onClick={() => handleNavClick('destinations')}
           >
-            <button
-              className={`nav-link dropdown-toggle ${activePage === 'destinations' ? 'active' : ''}`}
-              onClick={() => handleNavClick('destinations')}
-              onMouseEnter={() => setActiveDropdown('destinations')}
-              aria-expanded={activeDropdown === 'destinations'}
-            >
-              <span>Destinations</span>
-              <ChevronDown size={14} className={`chevron-icon ${activeDropdown === 'destinations' ? 'rotate' : ''}`} />
-            </button>
-            {activeDropdown === 'destinations' && (
-              <DropdownMenu
-                type="destinations"
-                items={destinationDropdownItems}
-                onSelect={handleDropdownSelect}
-                onClose={() => setActiveDropdown(null)}
-              />
-            )}
-          </div>
+            Destinations
+          </button>
 
           {/* 3. Services */}
           <button
@@ -124,7 +92,7 @@ export default function Navbar({
             Process
           </button>
 
-          {/* 5. Articles (Article Content Page - Image 2) */}
+          {/* 5. Articles */}
           <button
             className={`nav-link ${activePage === 'articles' || activePage === 'article-content' ? 'active' : ''}`}
             onClick={() => handleNavClick('articles')}
@@ -132,7 +100,7 @@ export default function Navbar({
             Articles
           </button>
 
-          {/* 6. FAQs (FAQs Page - Image 1) */}
+          {/* 6. FAQs */}
           <button
             className={`nav-link ${activePage === 'faqs' ? 'active' : ''}`}
             onClick={() => handleNavClick('faqs')}
@@ -195,37 +163,37 @@ export default function Navbar({
               className={`mobile-nav-item ${activePage === 'visas' ? 'active' : ''}`}
               onClick={() => handleNavClick('visas')}
             >
-              Visa Section
+              Visas
             </button>
             <button
               className={`mobile-nav-item ${activePage === 'destinations' ? 'active' : ''}`}
               onClick={() => handleNavClick('destinations')}
             >
-              Destination Section
+              Destinations
             </button>
             <button
               className={`mobile-nav-item ${activePage === 'services' ? 'active' : ''}`}
               onClick={() => handleNavClick('services')}
             >
-              Services Section
+              Services
             </button>
             <button
               className={`mobile-nav-item ${activePage === 'process' ? 'active' : ''}`}
               onClick={() => handleNavClick('process')}
             >
-              Process Section
+              Process
             </button>
             <button
-              className={`mobile-nav-item ${activePage === 'articles' ? 'active' : ''}`}
+              className={`mobile-nav-item ${activePage === 'articles' || activePage === 'article-content' ? 'active' : ''}`}
               onClick={() => handleNavClick('articles')}
             >
-              Article Content
+              Articles
             </button>
             <button
               className={`mobile-nav-item ${activePage === 'faqs' ? 'active' : ''}`}
               onClick={() => handleNavClick('faqs')}
             >
-              FAQ's Page
+              FAQs
             </button>
             <button
               className={`mobile-nav-item ${activePage === 'dashboard' ? 'active' : ''}`}

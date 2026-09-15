@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import AuthModal from './components/auth/AuthModal';
+import AuthPage from './components/auth/AuthPage';
+import VisaDetailModal from './components/visa/VisaDetailModal';
+import DiagnosticWizardModal from './components/modals/DiagnosticWizardModal';
+import ConsultationModal from './components/modals/ConsultationModal';
+import Toast from './components/common/Toast';
 
 // Dedicated Page Views matching Figma Drafts
 import VisasPage from './components/pages/VisasPage';
 import DestinationsPage from './components/pages/DestinationsPage';
 import ServicesPage from './components/pages/ServicesPage';
 import ProcessPage from './components/pages/ProcessPage';
+import ArticlesPage from './components/pages/ArticlesPage';
 import ArticleContentPage from './components/pages/ArticleContentPage';
 import FaqsPage from './components/pages/FaqsPage';
 import UserDashboardPage from './components/pages/UserDashboardPage';
@@ -17,18 +24,15 @@ import DocumentPortalPage from './components/pages/DocumentPortalPage';
 import VisaApplicationPage from './components/pages/VisaApplicationPage';
 import ReviewApplicationPage from './components/pages/ReviewApplicationPage';
 
-// Modals & Overlays
-import AuthPage from './components/auth/AuthPage';
-import AuthModal from './components/auth/AuthModal';
-import DiagnosticWizardModal from './components/modals/DiagnosticWizardModal';
-import ConsultationModal from './components/modals/ConsultationModal';
-import VisaDetailModal from './components/visa/VisaDetailModal';
-import Toast from './components/common/Toast';
+import PaymentPage from './components/pages/PaymentPage';
+import PaymentResultPage from './components/pages/PaymentResultPage';
 
 export default function App() {
   // Navigation State:
-  // 'visas' | 'destinations' | 'services' | 'process' | 'articles' | 'faqs' | 'dashboard' | 'diagnostic' | 'document-portal' | 'visa-application' | 'review-application' | 'auth'
+  // 'visas' | 'destinations' | 'services' | 'process' | 'articles' | 'faqs' | 'dashboard' | 'diagnostic' | 'document-portal' | 'visa-application' | 'review-application' | 'payment' | 'payment-success' | 'payment-failed' | 'auth'
   const [activePage, setActivePage] = useState('visas');
+
+  const [paymentResultData, setPaymentResultData] = useState(null);
 
   const [userSession, setUserSession] = useState({
     name: 'Alexander Sterling',
@@ -105,9 +109,20 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleFinalSubmitApplication = (finalData) => {
-    showToast('Application successfully submitted! Dossier received by legal review team.', 'success');
-    setActivePage('dashboard');
+  const handleProceedToPayment = () => {
+    setActivePage('payment');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePaymentSuccess = (result) => {
+    setPaymentResultData(result);
+    setActivePage('payment-success');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePaymentFailure = (result) => {
+    setPaymentResultData(result);
+    setActivePage('payment-failed');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -192,14 +207,29 @@ export default function App() {
           />
         )}
 
-        {/* 5. Articles Tab -> Article Content Page */}
-        {(activePage === 'articles' || activePage === 'article-content') && (
-          <ArticleContentPage
-            onStartApplication={handleStartVisaApplication}
+        {/* 5. Articles Tab -> Articles Page */}
+        {activePage === 'articles' && (
+          <ArticlesPage
+            onSelectArticle={(articleId) => {
+              setActivePage('article-content');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onStartApplication={handleStartDiagnosticFlow}
           />
         )}
 
-        {/* 6. FAQs Tab -> FAQ's Page */}
+        {/* 5b. Article Content Page */}
+        {activePage === 'article-content' && (
+          <ArticleContentPage
+            onBackToArticles={() => {
+              setActivePage('articles');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onStartApplication={handleStartDiagnosticFlow}
+          />
+        )}
+
+        {/* 6. FAQs Tab -> FAQ's Page (Image 1) */}
         {activePage === 'faqs' && (
           <FaqsPage
             onShowToast={showToast}
@@ -216,7 +246,7 @@ export default function App() {
           />
         )}
 
-        {/* 8. Diagnostic Assessment Flow (Image 1) */}
+        {/* 8. Diagnostic Assessment Flow */}
         {activePage === 'diagnostic' && (
           <DiagnosticPage
             onNavigateToApplication={(data) => handleStartVisaApplication(data)}
@@ -224,7 +254,7 @@ export default function App() {
           />
         )}
 
-        {/* 9. Document Submission Portal (Image 2) */}
+        {/* 9. Document Submission Portal */}
         {activePage === 'document-portal' && (
           <DocumentPortalPage
             onShowToast={showToast}
@@ -232,7 +262,7 @@ export default function App() {
           />
         )}
 
-        {/* 10. Visa Application Form (Image 3) */}
+        {/* 10. Visa Application Form */}
         {activePage === 'visa-application' && (
           <VisaApplicationPage
             initialData={currentApplicationDraft}
@@ -241,7 +271,7 @@ export default function App() {
           />
         )}
 
-        {/* 11. Review Visa Application Page (Image 4) */}
+        {/* 11. Review Visa Application Page */}
         {activePage === 'review-application' && (
           <ReviewApplicationPage
             applicationData={currentApplicationDraft}
@@ -249,12 +279,56 @@ export default function App() {
               setActivePage('visa-application');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            onSubmitApplication={handleFinalSubmitApplication}
+            onSubmitApplication={handleProceedToPayment}
             onShowToast={showToast}
           />
         )}
 
-        {/* 12. Auth Page */}
+        {/* 12. Payment Page (Image 2) */}
+        {activePage === 'payment' && (
+          <PaymentPage
+            applicationData={currentApplicationDraft}
+            onPaymentSuccess={handlePaymentSuccess}
+            onPaymentFailure={handlePaymentFailure}
+            onBack={() => {
+              setActivePage('review-application');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* 13a. Payment Successful Page (Image 3) */}
+        {activePage === 'payment-success' && (
+          <PaymentResultPage
+            status="success"
+            paymentData={paymentResultData || {}}
+            onReturnToDashboard={() => {
+              setActivePage('dashboard');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* 13b. Payment Unsuccessful Page */}
+        {activePage === 'payment-failed' && (
+          <PaymentResultPage
+            status="failure"
+            paymentData={paymentResultData || {}}
+            onRetryPayment={() => {
+              setActivePage('payment');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onReturnToDashboard={() => {
+              setActivePage('dashboard');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* 14. Auth Page */}
         {activePage === 'auth' && (
           <AuthPage
             onLoginSuccess={handleLoginSuccess}
@@ -264,7 +338,7 @@ export default function App() {
       </main>
 
       {/* Global Footer (Visible on marketing and public pages) */}
-      {activePage !== 'dashboard' && activePage !== 'visa-application' && activePage !== 'review-application' && (
+      {activePage !== 'dashboard' && activePage !== 'visa-application' && activePage !== 'review-application' && activePage !== 'payment' && activePage !== 'payment-success' && activePage !== 'payment-failed' && (
         <Footer
           setActivePage={setActivePage}
           onOpenAuth={handleOpenAuth}

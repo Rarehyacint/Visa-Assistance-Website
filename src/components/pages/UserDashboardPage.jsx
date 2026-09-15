@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   FileText,
   AlertCircle,
@@ -22,7 +22,10 @@ import {
   Trash2,
   Eye,
   Key,
-  Check
+  Check,
+  X,
+  FileCheck,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function UserDashboardPage({
@@ -36,7 +39,37 @@ export default function UserDashboardPage({
   onStartApplication,
   onShowToast
 }) {
+  const vaultFileInputRef = useRef(null);
+  const resolveFileInputRef = useRef(null);
+
   const [activeSidebarTab, setActiveSidebarTab] = useState('applications'); // 'applications' | 'vault' | 'payments' | 'personal' | 'settings'
+
+  // Application List State (to support dynamic resolution)
+  const [activeApplications, setActiveApplications] = useState([
+    {
+      id: 'US-9842-BX',
+      country: 'United States',
+      visaType: 'BUSINESS VISA',
+      date: 'Oct 12, 2024',
+      status: 'action-required', // 'action-required' | 'in-review' | 'approved'
+      warningText: 'Missing biometric data upload.',
+      expected: 'Action required by user'
+    },
+    {
+      id: 'JP-4410-TV',
+      country: 'JAPAN',
+      visaType: 'TOURIST E-VISA',
+      date: 'Oct 20, 2024',
+      status: 'in-review',
+      infoText: 'Expected processing: 3-5 days.',
+      expected: '3-5 Business Days'
+    }
+  ]);
+
+  // Modal States
+  const [resolveModalData, setResolveModalData] = useState(null); // { appId, country, visaType }
+  const [detailsModalData, setDetailsModalData] = useState(null); // { appId, country, visaType, date, expected }
+  const [resolveFile, setResolveFile] = useState(null);
 
   // Personal Details Form State
   const [profileForm, setProfileForm] = useState({
@@ -95,24 +128,70 @@ export default function UserDashboardPage({
   ]);
 
   const handleResolveAction = (appId) => {
-    if (onShowToast) onShowToast(`Opening biometric upload portal for Application #${appId}...`, 'info');
+    const targetApp = activeApplications.find((a) => a.id === appId) || {
+      id: appId,
+      country: 'United States',
+      visaType: 'BUSINESS VISA'
+    };
+    setResolveModalData(targetApp);
   };
 
   const handleViewDetails = (appId) => {
-    if (onShowToast) onShowToast(`Viewing live tracking timeline for Application #${appId}...`, 'info');
+    const targetApp = activeApplications.find((a) => a.id === appId) || {
+      id: appId,
+      country: 'JAPAN',
+      visaType: 'TOURIST E-VISA',
+      date: 'Oct 20, 2024',
+      expected: '3-5 Business Days'
+    };
+    setDetailsModalData(targetApp);
   };
 
-  const handleUploadDocument = () => {
+  const handleTriggerVaultUpload = () => {
+    if (vaultFileInputRef.current) {
+      vaultFileInputRef.current.click();
+    }
+  };
+
+  const handleVaultFileChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const formattedSize = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
     const newDoc = {
       id: Date.now(),
-      name: `Document_${Date.now().toString().slice(-4)}.pdf`,
+      name: file.name,
       type: 'Supporting',
       status: 'in-review',
       meta: 'Uploaded just now • Under verification',
-      size: '1.5 MB'
+      size: formattedSize
     };
+
     setVaultDocs([newDoc, ...vaultDocs]);
-    if (onShowToast) onShowToast(`Uploaded ${newDoc.name} to your encrypted Document Vault!`, 'success');
+    if (onShowToast) onShowToast(`Uploaded "${file.name}" to your Document Vault!`, 'success');
+    e.target.value = '';
+  };
+
+  const handleCompleteResolve = () => {
+    if (!resolveModalData) return;
+    const appId = resolveModalData.id;
+
+    setActiveApplications((prev) =>
+      prev.map((app) =>
+        app.id === appId
+          ? {
+              ...app,
+              status: 'in-review',
+              infoText: 'Biometric verification file submitted. Reviewing dossier.',
+              expected: '2-4 Business Days'
+            }
+          : app
+      )
+    );
+
+    if (onShowToast) onShowToast(`Biometric resolution submitted for Application #${appId}! Status changed to In Review.`, 'success');
+    setResolveModalData(null);
+    setResolveFile(null);
   };
 
   const handleDeleteVaultDoc = (docId) => {
@@ -232,71 +311,62 @@ export default function UserDashboardPage({
                 <div className="dashboard-section-divider"></div>
 
                 <div className="active-applicants-grid">
-                  {/* Card 1: United States (Business Visa) with Action Required */}
-                  <div className="applicant-status-card card-action-required">
-                    <div className="card-top-header">
-                      <span className="visa-type-tag">BUSINESS VISA</span>
-                      <span className="status-pill pill-action-required">
-                        <span className="status-dot-red"></span> Action Required
-                      </span>
-                    </div>
-
-                    <h3 className="applicant-country-title">United States</h3>
-
-                    <div className="applicant-meta-table">
-                      <div className="meta-row">
-                        <span className="meta-label">APPLICATION ID:</span>
-                        <span className="meta-val">US-9842-BX</span>
-                      </div>
-                      <div className="meta-row">
-                        <span className="meta-label">APPLICATION DATE:</span>
-                        <span className="meta-val">Oct 12, 2024</span>
-                      </div>
-                    </div>
-
-                    <div className="card-bottom-action-bar bar-red">
-                      <span className="action-warning-text">Missing biometric data upload.</span>
-                      <button
-                        className="btn-resolve-pill"
-                        onClick={() => handleResolveAction('US-9842-BX')}
+                  {activeApplications.map((app) => {
+                    const isActionReq = app.status === 'action-required';
+                    return (
+                      <div
+                        key={app.id}
+                        className={`applicant-status-card ${isActionReq ? 'card-action-required' : 'card-in-review'}`}
                       >
-                        Resolve Now
-                      </button>
-                    </div>
-                  </div>
+                        <div className="card-top-header">
+                          <span className="visa-type-tag">{app.visaType}</span>
+                          <span className={`status-pill ${isActionReq ? 'pill-action-required' : 'pill-in-review'}`}>
+                            {isActionReq ? (
+                              <>
+                                <span className="status-dot-red"></span> Action Required
+                              </>
+                            ) : (
+                              '... In Review'
+                            )}
+                          </span>
+                        </div>
 
-                  {/* Card 2: JAPAN (Tourist E-Visa) In Review */}
-                  <div className="applicant-status-card card-in-review">
-                    <div className="card-top-header">
-                      <span className="visa-type-tag">TOURIST E-VISA</span>
-                      <span className="status-pill pill-in-review">
-                        ... In Review
-                      </span>
-                    </div>
+                        <h3 className="applicant-country-title">{app.country}</h3>
 
-                    <h3 className="applicant-country-title">JAPAN</h3>
+                        <div className="applicant-meta-table">
+                          <div className="meta-row">
+                            <span className="meta-label">APPLICATION ID:</span>
+                            <span className="meta-val">{app.id}</span>
+                          </div>
+                          <div className="meta-row">
+                            <span className="meta-label">APPLICATION DATE:</span>
+                            <span className="meta-val">{app.date}</span>
+                          </div>
+                        </div>
 
-                    <div className="applicant-meta-table">
-                      <div className="meta-row">
-                        <span className="meta-label">APPLICATION ID:</span>
-                        <span className="meta-val">JP-4410-TV</span>
+                        <div className={`card-bottom-action-bar ${isActionReq ? 'bar-red' : 'bar-blue'}`}>
+                          <span className={isActionReq ? 'action-warning-text' : 'action-info-text'}>
+                            {isActionReq ? app.warningText || 'Missing biometric data upload.' : app.infoText || 'Expected processing: 3-5 days.'}
+                          </span>
+                          {isActionReq ? (
+                            <button
+                              className="btn-resolve-pill"
+                              onClick={() => handleResolveAction(app.id)}
+                            >
+                              Resolve Now
+                            </button>
+                          ) : (
+                            <button
+                              className="btn-view-details-pill"
+                              onClick={() => handleViewDetails(app.id)}
+                            >
+                              View Details
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="meta-row">
-                        <span className="meta-label">APPLICATION DATE:</span>
-                        <span className="meta-val">Oct 20, 2024</span>
-                      </div>
-                    </div>
-
-                    <div className="card-bottom-action-bar bar-blue">
-                      <span className="action-info-text">Expected processing: 3-5 days.</span>
-                      <button
-                        className="btn-view-details-pill"
-                        onClick={() => handleViewDetails('JP-4410-TV')}
-                      >
-                        View Details
-                      </button>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
               </section>
 
@@ -314,34 +384,23 @@ export default function UserDashboardPage({
                   <div className="dashboard-section-divider"></div>
 
                   <div className="document-vault-box">
-                    <div className="vault-doc-item">
-                      <div className="doc-icon-box">
-                        <FileText size={20} className="doc-svg" />
+                    {vaultDocs.slice(0, 2).map((doc) => (
+                      <div key={doc.id} className="vault-doc-item">
+                        <div className="doc-icon-box">
+                          <FileText size={20} className="doc-svg" />
+                        </div>
+                        <div className="doc-info-col">
+                          <h4 className="doc-name">{doc.name}</h4>
+                          <p className="doc-status-text">{doc.meta}</p>
+                        </div>
+                        <button className="doc-options-btn" onClick={() => setActiveSidebarTab('vault')}>
+                          <MoreVertical size={16} />
+                        </button>
                       </div>
-                      <div className="doc-info-col">
-                        <h4 className="doc-name">Primary Passport</h4>
-                        <p className="doc-status-text">Expires: Dec 2028 • Verified</p>
-                      </div>
-                      <button className="doc-options-btn" onClick={() => setActiveSidebarTab('vault')}>
-                        <MoreVertical size={16} />
-                      </button>
-                    </div>
-
-                    <div className="vault-doc-item">
-                      <div className="doc-icon-box">
-                        <FileText size={20} className="doc-svg" />
-                      </div>
-                      <div className="doc-info-col">
-                        <h4 className="doc-name">National ID Card</h4>
-                        <p className="doc-status-text">Uploaded: Oct 2024</p>
-                      </div>
-                      <button className="doc-options-btn" onClick={() => setActiveSidebarTab('vault')}>
-                        <MoreVertical size={16} />
-                      </button>
-                    </div>
+                    ))}
 
                     <div className="vault-upload-action-row">
-                      <button className="btn-vault-upload" onClick={handleUploadDocument}>
+                      <button className="btn-vault-upload" onClick={handleTriggerVaultUpload}>
                         <Upload size={14} />
                         <span>Upload New Document</span>
                       </button>
@@ -781,6 +840,167 @@ export default function UserDashboardPage({
           )}
         </main>
       </div>
+
+      {/* Hidden Native File Inputs */}
+      <input
+        type="file"
+        ref={vaultFileInputRef}
+        onChange={handleVaultFileChange}
+        style={{ display: 'none' }}
+        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+      />
+
+      <input
+        type="file"
+        ref={resolveFileInputRef}
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            setResolveFile(e.target.files[0]);
+          }
+        }}
+        style={{ display: 'none' }}
+        accept=".pdf,.jpg,.jpeg,.png"
+      />
+
+      {/* MODAL 1: Resolve Issue Modal */}
+      {resolveModalData && (
+        <div className="modal-backdrop animate-fade-in" onClick={() => setResolveModalData(null)}>
+          <div className="modal-card-dialog modal-resolve-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-row">
+              <div className="modal-header-title-wrap">
+                <AlertTriangle size={22} className="modal-alert-icon-red" />
+                <h3 className="modal-title-text">Resolve Application Action Item</h3>
+              </div>
+              <button className="btn-modal-close" onClick={() => setResolveModalData(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body-content">
+              <div className="resolve-app-meta-box">
+                <span className="resolve-meta-tag">{resolveModalData.visaType}</span>
+                <h4 className="resolve-app-country">{resolveModalData.country} (App #{resolveModalData.id})</h4>
+                <p className="resolve-warning-desc">
+                  Immigration authority requested biometric photo verification and updated passport bio-page scan before proceeding with embassy decision.
+                </p>
+              </div>
+
+              <div className="resolve-upload-dropzone" onClick={() => resolveFileInputRef.current && resolveFileInputRef.current.click()}>
+                <Upload size={24} className="resolve-cloud-icon" />
+                {resolveFile ? (
+                  <div className="resolve-selected-file">
+                    <FileCheck size={18} className="file-check-icon" />
+                    <span>Selected: {resolveFile.name} ({(resolveFile.size / 1024).toFixed(0)} KB)</span>
+                  </div>
+                ) : (
+                  <>
+                    <span className="dropzone-primary-text">Click to select Biometric File from your device</span>
+                    <span className="dropzone-secondary-text">Supported: JPG, PNG, PDF (Max 10MB)</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-footer-actions">
+              <button className="btn-secondary-cancel" onClick={() => setResolveModalData(null)}>
+                Cancel
+              </button>
+              <button
+                className="btn-primary-resolve-action"
+                onClick={handleCompleteResolve}
+              >
+                <span>Submit & Resolve Issue</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: View Details & Live Tracking Modal */}
+      {detailsModalData && (
+        <div className="modal-backdrop animate-fade-in" onClick={() => setDetailsModalData(null)}>
+          <div className="modal-card-dialog modal-tracking-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-row">
+              <div className="modal-header-title-wrap">
+                <Globe size={22} className="modal-globe-icon-blue" />
+                <h3 className="modal-title-text">Application Details & Live Tracking</h3>
+              </div>
+              <button className="btn-modal-close" onClick={() => setDetailsModalData(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body-content">
+              {/* App Overview Banner */}
+              <div className="tracking-overview-banner">
+                <div className="tracking-app-title-col">
+                  <span className="tracking-visa-type">{detailsModalData.visaType}</span>
+                  <h4 className="tracking-country-name">{detailsModalData.country}</h4>
+                  <p className="tracking-ref-id">Reference ID: {detailsModalData.id}</p>
+                </div>
+                <div className="tracking-status-badge">
+                  <Clock size={16} />
+                  <span>Processing (Est. {detailsModalData.expected || '3-5 Days'})</span>
+                </div>
+              </div>
+
+              {/* Progress Timeline */}
+              <div className="tracking-timeline-box">
+                <h4 className="timeline-heading-title">Live Embassy Dossier Timeline</h4>
+
+                <div className="timeline-steps-stack">
+                  <div className="timeline-step-item step-completed">
+                    <div className="step-circle"><Check size={14} /></div>
+                    <div className="step-content">
+                      <h5 className="step-title">Application Submitted & Fee Paid</h5>
+                      <span className="step-timestamp">{detailsModalData.date || 'Oct 20, 2024'} • 09:14 AM</span>
+                    </div>
+                  </div>
+
+                  <div className="timeline-step-item step-completed">
+                    <div className="step-circle"><Check size={14} /></div>
+                    <div className="step-content">
+                      <h5 className="step-title">Legal Dossier & Document Verification</h5>
+                      <span className="step-timestamp">Verified by Legal Specialist (Marcus Vance)</span>
+                    </div>
+                  </div>
+
+                  <div className="timeline-step-item step-active">
+                    <div className="step-circle pulse-dot"></div>
+                    <div className="step-content">
+                      <h5 className="step-title">Consular Review & Background Check</h5>
+                      <span className="step-timestamp">In Progress at Embassy Consulate</span>
+                    </div>
+                  </div>
+
+                  <div className="timeline-step-item step-pending">
+                    <div className="step-circle"></div>
+                    <div className="step-content">
+                      <h5 className="step-title">Visa E-Grant Issued & Stamped</h5>
+                      <span className="step-timestamp">Pending final approval</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer-actions">
+              <button
+                className="btn-secondary-cancel"
+                onClick={() => {
+                  if (onShowToast) onShowToast(`Downloaded tracking summary report for #${detailsModalData.id}`, 'info');
+                }}
+              >
+                <Download size={14} />
+                <span>Download Report</span>
+              </button>
+              <button className="btn-primary-resolve-action" onClick={() => setDetailsModalData(null)}>
+                <span>Close</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
