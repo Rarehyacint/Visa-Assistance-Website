@@ -51,7 +51,7 @@ export default function Navbar({
     <header className="global-navbar">
       <div className="container nav-container">
         {/* Brand / Logo */}
-        <div className="nav-brand" onClick={() => handleNavClick('visas')}>
+        <div className="nav-brand" onClick={() => handleNavClick('home')}>
           <div className="brand-circle-logo" aria-label="GlobalVisa Logo">
             <div className="logo-inner-dot"></div>
           </div>
@@ -60,7 +60,15 @@ export default function Navbar({
 
         {/* Desktop Navigation Links */}
         <nav className="desktop-nav-links">
-          {/* 1. Visas Nav Button */}
+          {/* 1. Home Nav Button */}
+          <button
+            className={`nav-link ${activePage === 'home' ? 'active' : ''}`}
+            onClick={() => handleNavClick('home')}
+          >
+            Home
+          </button>
+
+          {/* 2. Visas Nav Button */}
           <button
             className={`nav-link ${activePage === 'visas' ? 'active' : ''}`}
             onClick={() => handleNavClick('visas')}
@@ -68,7 +76,7 @@ export default function Navbar({
             Visas
           </button>
 
-          {/* 2. Destinations Nav Button */}
+          {/* 3. Destinations Nav Button */}
           <button
             className={`nav-link ${activePage === 'destinations' ? 'active' : ''}`}
             onClick={() => handleNavClick('destinations')}
@@ -76,7 +84,7 @@ export default function Navbar({
             Destinations
           </button>
 
-          {/* 3. Services */}
+          {/* 4. Services */}
           <button
             className={`nav-link ${activePage === 'services' ? 'active' : ''}`}
             onClick={() => handleNavClick('services')}
@@ -84,7 +92,7 @@ export default function Navbar({
             Services
           </button>
 
-          {/* 4. Process */}
+          {/* 5. Process */}
           <button
             className={`nav-link ${activePage === 'process' ? 'active' : ''}`}
             onClick={() => handleNavClick('process')}
@@ -92,7 +100,7 @@ export default function Navbar({
             Process
           </button>
 
-          {/* 5. Articles */}
+          {/* 6. Articles */}
           <button
             className={`nav-link ${activePage === 'articles' || activePage === 'article-content' ? 'active' : ''}`}
             onClick={() => handleNavClick('articles')}
@@ -100,7 +108,7 @@ export default function Navbar({
             Articles
           </button>
 
-          {/* 6. FAQs */}
+          {/* 7. FAQs */}
           <button
             className={`nav-link ${activePage === 'faqs' ? 'active' : ''}`}
             onClick={() => handleNavClick('faqs')}
@@ -159,6 +167,12 @@ export default function Navbar({
       {mobileMenuOpen && (
         <div className="mobile-nav-drawer animate-fade-in">
           <div className="mobile-nav-list">
+            <button
+              className={`mobile-nav-item ${activePage === 'home' ? 'active' : ''}`}
+              onClick={() => handleNavClick('home')}
+            >
+              Home
+            </button>
             <button
               className={`mobile-nav-item ${activePage === 'visas' ? 'active' : ''}`}
               onClick={() => handleNavClick('visas')}

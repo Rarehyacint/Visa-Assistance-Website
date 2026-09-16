@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileText, UserCheck, ShieldCheck, Check } from 'lucide-react';
-import { beyondVisaServices } from '../../data/pricingData';
+import { supportEcosystem } from '../../data/pricingData';
 
 const iconMap = {
   FileText: FileText,
@@ -20,7 +20,7 @@ export default function BeyondVisa({ onSelectService }) {
         </div>
 
         <div className="beyond-cards-grid">
-          {beyondVisaServices.map((service) => {
+          {supportEcosystem.map((service) => {
             const Icon = iconMap[service.icon] || FileText;
             return (
               <div
@@ -35,7 +35,7 @@ export default function BeyondVisa({ onSelectService }) {
                 <p className="beyond-card-desc">{service.description}</p>
                 
                 <ul className="beyond-feature-bullets">
-                  {service.features.map((feat, idx) => (
+                  {(service.features || []).map((feat, idx) => (
                     <li key={idx}>
                       <Check size={14} className="check-bullet" />
                       <span>{feat}</span>

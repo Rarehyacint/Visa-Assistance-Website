@@ -17,6 +17,7 @@ import ArticlesPage from './components/pages/ArticlesPage';
 import ArticleContentPage from './components/pages/ArticleContentPage';
 import FaqsPage from './components/pages/FaqsPage';
 import UserDashboardPage from './components/pages/UserDashboardPage';
+import HomePage from './components/pages/HomePage';
 
 // Flow Pages matching new batch
 import DiagnosticPage from './components/pages/DiagnosticPage';
@@ -29,8 +30,8 @@ import PaymentResultPage from './components/pages/PaymentResultPage';
 
 export default function App() {
   // Navigation State:
-  // 'visas' | 'destinations' | 'services' | 'process' | 'articles' | 'faqs' | 'dashboard' | 'diagnostic' | 'document-portal' | 'visa-application' | 'review-application' | 'payment' | 'payment-success' | 'payment-failed' | 'auth'
-  const [activePage, setActivePage] = useState('visas');
+  // 'home' | 'visas' | 'destinations' | 'services' | 'process' | 'articles' | 'faqs' | 'dashboard' | 'diagnostic' | 'document-portal' | 'visa-application' | 'review-application' | 'payment' | 'payment-success' | 'payment-failed' | 'auth'
+  const [activePage, setActivePage] = useState('home');
 
   const [paymentResultData, setPaymentResultData] = useState(null);
 
@@ -169,8 +170,23 @@ export default function App() {
 
       {/* Main Content Area: Direct Page Routing */}
       <main className="main-content">
-        {/* 1. Visas Tab -> Visa Section */}
-        {(activePage === 'visas' || activePage === 'home') && (
+        {/* 1. Home Tab */}
+        {activePage === 'home' && (
+          <HomePage
+            onStartApplication={handleStartDiagnosticFlow}
+            onViewDestinations={() => {
+              setActivePage('destinations');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onSelectVisa={handleSelectVisa}
+            onSelectDestination={handleSelectDestination}
+            onSelectService={handleSelectService}
+            onSelectPlan={handleSelectPlan}
+          />
+        )}
+
+        {/* 2. Visas Tab -> Visa Section */}
+        {activePage === 'visas' && (
           <VisasPage
             onSelectVisa={handleSelectVisa}
             onScheduleCall={handleScheduleCall}
@@ -178,7 +194,7 @@ export default function App() {
           />
         )}
 
-        {/* 2. Destinations Tab -> Destination Section */}
+        {/* 3. Destinations Tab -> Destination Section */}
         {activePage === 'destinations' && (
           <DestinationsPage
             onSelectDestination={handleSelectDestination}
