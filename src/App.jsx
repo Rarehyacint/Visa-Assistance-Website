@@ -31,7 +31,7 @@ import PaymentResultPage from './components/pages/PaymentResultPage';
 export default function App() {
   // Navigation State:
   // 'home' | 'visas' | 'destinations' | 'services' | 'process' | 'articles' | 'faqs' | 'dashboard' | 'diagnostic' | 'document-portal' | 'visa-application' | 'review-application' | 'payment' | 'payment-success' | 'payment-failed' | 'auth'
-  const [activePage, setActivePage] = useState('home');
+  const [activePage, setActivePage] = useState('auth');
 
   const [paymentResultData, setPaymentResultData] = useState(null);
 
@@ -156,17 +156,18 @@ export default function App() {
 
   return (
     <div className="app-root">
-      {/* Top Navigation Bar */}
-      <Navbar
-        activePage={activePage}
-        setActivePage={(page) => {
-          setActivePage(page);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onOpenAuth={handleOpenAuth}
-        onOpenDiagnostic={handleStartDiagnosticFlow}
-        userSession={userSession}
-      />
+      {activePage !== 'auth' && (
+        <Navbar
+          activePage={activePage}
+          setActivePage={(page) => {
+            setActivePage(page);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpenAuth={handleOpenAuth}
+          onOpenDiagnostic={handleStartDiagnosticFlow}
+          userSession={userSession}
+        />
+      )}
 
       {/* Main Content Area: Direct Page Routing */}
       <main className="main-content">
@@ -354,7 +355,7 @@ export default function App() {
       </main>
 
       {/* Global Footer (Visible on marketing and public pages) */}
-      {activePage !== 'dashboard' && activePage !== 'visa-application' && activePage !== 'review-application' && activePage !== 'payment' && activePage !== 'payment-success' && activePage !== 'payment-failed' && (
+      {activePage !== 'auth' && activePage !== 'dashboard' && activePage !== 'visa-application' && activePage !== 'review-application' && activePage !== 'payment' && activePage !== 'payment-success' && activePage !== 'payment-failed' && (
         <Footer
           setActivePage={setActivePage}
           onOpenAuth={handleOpenAuth}
