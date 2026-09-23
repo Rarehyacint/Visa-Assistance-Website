@@ -24,7 +24,7 @@ export default function AuthPage({ onLoginSuccess, onShowToast }) {
             <button type="button" className="auth-page-signup">♙ &nbsp; SIGN IN / SIGN UP</button>
           </header>
 
-          <main className="auth-main-card">
+          <main className={`auth-main-card ${activeView === 'main' && activeTab === 'register' ? 'is-register-view' : ''}`}>
             <div className="auth-main-header">
               <h1 className="auth-brand-title">GlobalVisa</h1>
               <p className="auth-brand-subtitle">Secure access to your visa applications</p>

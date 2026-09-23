@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import { signInWithGoogle } from './googleAuth';
 
 export default function SignInForm({ onSwitchMode, onLoginSuccess, onResetPassword }) {
   const [email, setEmail] = useState('');
@@ -27,14 +28,23 @@ export default function SignInForm({ onSwitchMode, onLoginSuccess, onResetPasswo
   };
 
   const handleSocialLogin = (provider) => {
+    if (provider !== 'Google') {
+      setError(`${provider} sign-in is not available yet.`);
+      return;
+    }
+
+    setError('');
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onLoginSuccess({
-        email: `user@${provider.toLowerCase()}.com`,
-        name: `${provider} Traveler`
+    signInWithGoogle()
+      .then((user) => {
+        onLoginSuccess(user);
+      })
+      .catch((authError) => {
+        setError(authError.message);
+      })
+      .finally(() => {
+        setLoading(false);
       });
-    }, 600);
   };
 
   return (

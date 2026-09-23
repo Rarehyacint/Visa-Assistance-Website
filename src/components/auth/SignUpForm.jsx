@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { signInWithGoogle } from './googleAuth';
 
 export default function SignUpForm({ onSwitchMode, onSignUpSuccess }) {
   const [fullName, setFullName] = useState('');
@@ -32,14 +33,23 @@ export default function SignUpForm({ onSwitchMode, onSignUpSuccess }) {
   };
 
   const handleSocialSignUp = (provider) => {
+    if (provider !== 'Google') {
+      setError(`${provider} sign-up is not available yet.`);
+      return;
+    }
+
+    setError('');
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onSignUpSuccess({
-        name: `${provider} User`,
-        email: `traveler@${provider.toLowerCase()}.com`
+    signInWithGoogle()
+      .then((user) => {
+        onSignUpSuccess(user);
+      })
+      .catch((authError) => {
+        setError(authError.message);
+      })
+      .finally(() => {
+        setLoading(false);
       });
-    }, 600);
   };
 
   return (

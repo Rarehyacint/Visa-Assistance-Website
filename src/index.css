@@ -1703,6 +1703,10 @@ input:focus, select:focus, textarea:focus {
   margin: 0 auto;
 }
 
+.auth-main-card.is-register-view .auth-main-content {
+  max-width: 524px;
+}
+
 .auth-main-header {
   text-align: center;
   margin-bottom: 32px;
@@ -1883,6 +1887,38 @@ input:focus, select:focus, textarea:focus {
   border-radius: var(--radius-lg);
   padding: 28px 24px;
   box-shadow: var(--shadow-md);
+}
+
+.auth-main-card.is-register-view .figma-create-account-card {
+  padding: 42px 44px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.auth-main-card.is-register-view .create-account-title {
+  font-size: 2rem;
+  margin-bottom: 26px;
+}
+
+.auth-main-card.is-register-view .form-label {
+  font-size: 1rem;
+  margin-bottom: 9px;
+}
+
+.auth-main-card.is-register-view .form-group {
+  margin-bottom: 22px;
+}
+
+.auth-main-card.is-register-view .figma-styled-input {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  font-size: 1rem;
+  background: #f8f9fe;
+}
+
+.auth-main-card.is-register-view .btn-figma-blue {
+  padding: 16px;
+  font-size: 1rem;
 }
 
 .create-account-title {
